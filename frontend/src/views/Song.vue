@@ -2,9 +2,20 @@
   <Header />
   <v-container>
     <v-card>
+      <v-row justify="end" align="center" class="pa-2">
+        <v-col class="px-4" cols="auto">
+          <p class="heading-text">Transpose chords:</p>
+        </v-col>
+        <v-col class="px-4" cols="auto">
+          <v-btn-toggle rounded dense group>
+            <v-btn text icon="mdi-minus" small />
+            <v-btn text icon="mdi-plus" small />
+          </v-btn-toggle>
+        </v-col>
+      </v-row>
       <v-card-title>{{song.author}} - {{ song.title }}</v-card-title>
       <v-card-text>
-        <pre>{{ song.lyrics }}</pre>
+        <div v-html="formattedSong"></div>
       </v-card-text>
     </v-card>
   </v-container>
@@ -12,6 +23,11 @@
 
 <script>
 import Header  from "@/components/Header.vue";
+import ChordSheetJS from 'chordsheetjs';
+
+const formatter = new ChordSheetJS.HtmlTableFormatter;
+const parser = new ChordSheetJS.ChordsOverWordsParser();
+
 export default {
   name: 'Song',
   components: {
@@ -22,10 +38,10 @@ export default {
       song: {
         title: null,
         author: null,
-        lyrics: null,
+        lyrics: '',
       },
       loading: true,
-      error: undefined,
+      error: undefined
     };
   },
   async created() {
@@ -41,12 +57,25 @@ export default {
     } finally {
       this.loading = false;
     }
+  },
+  computed: {
+    formattedSong() {
+      return formatter.format(parser.parse(this.song.lyrics));
+    }
   }
 };
 </script>
 
-<style scoped>
-pre {
-  white-space: pre-wrap;
-}
+<style>
+    .chord {
+        color: #e89380; /* Цвет аккорда */
+    }
+    .row .lyrics {
+        white-space: pre;
+        display: contents;
+    }
+    .row .chord {
+        white-space: pre;
+        display: table-cell;
+    }
 </style>

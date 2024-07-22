@@ -4,9 +4,8 @@ import AddSong from '@/views/AddSong.vue'
 import Authors from '@/views/Authors.vue'
 import Author from '@/views/Author.vue'
 import Song from '@/views/Song.vue'
-import Register from '@/views/Register.vue'
-import Login from '@/views/Login.vue'
 import NotFound from "@/views/NotFound.vue";
+import store from '@/store'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -15,16 +14,6 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: Home
-    },
-    {
-      path: '/register',
-      name: 'register',
-      component: Register
-    },
-    {
-      path: '/login',
-      name: 'login',
-      component: Login
     },
     {
       path: '/add/song',
@@ -54,15 +43,17 @@ const router = createRouter({
   ]
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
-  const token = localStorage.getItem('token');
 
-  if (requiresAuth && !token) {
-    next('/login');
-  } else {
-    next();
+  if (requiresAuth && !store.state.isLoggedIn) {
+    await store.dispatch('login');
+    if (!store.state.isLoggedIn) {
+      return next('/login');
+    }
   }
+
+  next();
 });
 
 export default router;

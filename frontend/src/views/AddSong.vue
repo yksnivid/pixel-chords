@@ -11,9 +11,8 @@
       </v-col>
       <v-col cols="12" md="8" lg="6">
         <v-card>
-          <v-card-text class="card-text">
-            <!-- Используем div с v-html для отображения экранированных аккордов как ссылок -->
-            <div v-html="escapedText"></div>
+          <v-card-text>
+            <div v-html="parsedLyrics"></div>
           </v-card-text>
         </v-card>
       </v-col>
@@ -40,6 +39,11 @@
 </template>
 
 <script>
+import ChordSheetJS from 'chordsheetjs';
+
+const formatter = new ChordSheetJS.ChordProFormatter();
+const parser = new ChordSheetJS.ChordsOverWordsParser();
+
 export default {
   name: "AddSong",
   data() {
@@ -54,29 +58,8 @@ export default {
     await this.fetchAuthors();
   },
   computed: {
-    escapedText() {
-  // Регулярное выражение для поиска аккордов и составных аккордов
-  const chordRegex = /\b([A-GH](?:[#b]?(?:m|maj|aug|dim|sus(?:2|4)?|m?sus(?:2|4)?|6|7|9|11|13)?)?)\b/g;
-
-  // Заменяем найденные аккорды на [аккорд]
-  let result = this.lyrics.replace(chordRegex, '[$1]');
-
-  // Регулярное выражение для поиска и обработки составных аккордов
-  const compositeChordRegex = /\[([A-GH](?:[#b]?(?:m|maj|aug|dim|sus(?:2|4)?|m?sus(?:2|4)?|6|7|9|11|13)?)?)\/([A-GH](?:[#b]?)?)\]/g;
-
-  // Заменяем составные аккорды на их экранированные версии
-  result = result.replace(compositeChordRegex, '[$1]/[$2]');
-
-  return result;
-},
-
-    // Вычисляемое свойство для отображения текста с экранированными аккордами как ссылками
-    escapedTextWithLinks() {
-      // Регулярное выражение для поиска экранированных аккордов
-      const chordRegex = /\[(.*?)\]/g;
-
-      // Заменяем найденные экранированные аккорды на HTML-ссылки
-      return this.escapedText.replace(chordRegex, '<a class="chord-link" href="#" @click.prevent="showChord">$1</a>');
+    parsedLyrics() {
+      return formatter.format(parser.parse(this.lyrics));
     }
   },
   methods: {
@@ -100,7 +83,7 @@ export default {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          lyrics: this.escapedText
+          lyrics: this.lyrics
         })
       })
       .then(response => response.json())

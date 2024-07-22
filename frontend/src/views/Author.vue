@@ -5,7 +5,7 @@
       <v-col cols="12" md="8" lg="6">
         <v-card v-if="!loading && !error">
           <v-img
-            class="align-end text-white"
+            class="align-end text-white mb-3"
             height="200"
             :src="authorInformation.coverImage"
             cover
@@ -13,22 +13,38 @@
             <v-card-title>{{ authorInformation.author }}</v-card-title>
           </v-img>
 
-          <v-card-text v-if="authorInformation.about">
-            <span>About:</span>
-            <p>{{ authorInformation.about }}</p>
-          </v-card-text>
+          <div v-if="authorInformation.about">
+            <v-card-subtitle>About</v-card-subtitle>
+            <v-card-text>{{ authorInformation.about }}</v-card-text>
+          </div>
 
-          <v-card-subtitle class="pt-4">
+          <v-card-subtitle>
             Number of songs: {{ authorInformation.numberOfSongs }}
           </v-card-subtitle>
 
           <v-list>
             <v-list-item
               v-for="song in authorInformation.songs"
-              :key="song.title"
+              :key="song.id"
               :title="song.title"
               @click="$router.push(`/songs/${authorInformation.author}/${song.title}`)"
-            ></v-list-item>
+            >
+              <template v-slot:append>
+                <v-btn
+                  :color="isLoggedIn && song.isFavorite ? 'red' : 'medium-emphasis'"
+                  icon="mdi-heart"
+                  size="small"
+                  variant="plain"
+                  @click.stop="toggleFavorite(song)"
+                ></v-btn>
+                <v-btn
+                  icon="mdi-share-variant"
+                  size="small"
+                  variant="plain"
+                  @click.stop="shareSong(song.id)"
+                ></v-btn>
+              </template>
+            </v-list-item>
           </v-list>
 
         </v-card>
@@ -64,18 +80,59 @@ export default {
     };
   },
   async created() {
-    const { author } = this.$route.params;
-    try {
-      const response = await fetch(`/api/author/${author}`);
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
+    await this.fetchAuthorData();
+  },
+  beforeRouteUpdate(to, from, next) {
+    this.fetchAuthorData(to.params.author);
+    next();
+  },
+  computed: {
+    isLoggedIn() {
+      return this.$store.state.isLoggedIn;
+    }
+  },
+  methods: {
+    async fetchAuthorData(authorName = this.$route.params.author) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await fetch(`/api/author/${authorName}`);
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        this.authorInformation = await response.json();
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.loading = false;
       }
-      this.authorInformation = await response.json();
-      console.log(this.authorInformation);
-    } catch (error) {
-      this.error = error.message;
-    } finally {
-      this.loading = false;
+    },
+    async toggleFavorite(song) {
+      if (!this.isLoggedIn) {
+        // this.$router.push('/login');
+        return;
+      }
+      try {
+        song.isFavorite = !song.isFavorite;
+        const response = await fetch('/api/toggle_favorite_song', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ song_id: song.id })
+        });
+        if (!response.ok) {
+          throw new Error('Failed to toggle favorite');
+        }
+        // Обработка успешного добавления/удаления из избранного
+        console.log('Toggled favorite song');
+      } catch (error) {
+        console.error('Error toggling favorite:', error);
+      }
+    },
+    shareSong(songId) {
+      // Логика для поделиться песней
+      console.log('Shared song:', songId);
     }
   }
 };

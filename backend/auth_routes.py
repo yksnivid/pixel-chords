@@ -6,7 +6,7 @@ from .extensions import db, bcrypt
 auth_bp = Blueprint('auth', __name__)
 
 
-@auth_bp.route('/api/register', methods=['POST'])
+@auth_bp.route('/api/users', methods=['POST'])
 def register():
     data = request.get_json()
     username = data.get('username')
@@ -27,13 +27,17 @@ def register():
 @auth_bp.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
-    email = data.get('email')
+    username = data.get('username')
     password = data.get('password')
-    user = User.query.filter_by(email=email).first()
+    user = User.query.filter_by(username=username).first()
 
-    if user and bcrypt.check_password_hash(user.password, password):
+    if user and bcrypt.check_password_hash(user.password_hash, password):
         login_user(user)
-        return jsonify({'message': 'Logged in successfully'}), 200
+        return jsonify(
+            {'message': 'Logged in successfully',
+             'user': current_user.username,
+             'role': current_user.role}
+        ), 200
 
     return jsonify({'error': 'Invalid credentials'}), 401
 
@@ -48,7 +52,7 @@ def logout():
 @auth_bp.route('/api/current_user', methods=['GET'])
 def get_current_user():
     if current_user.is_authenticated:
-        return jsonify({'user': current_user.username, 'email': current_user.email, 'role': current_user.role}), 200
+        return jsonify({'user': current_user.username, 'role': current_user.role}), 200
     return jsonify({'error': 'User not authenticated'}), 401
 
 
