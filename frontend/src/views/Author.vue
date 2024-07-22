@@ -7,42 +7,56 @@
           <v-img
             class="align-end text-white mb-3"
             height="200"
-            :src="authorInformation.coverImage"
+            :src="author.image"
             cover
           >
-            <v-card-title>{{ authorInformation.author }}</v-card-title>
+          <v-fab
+            v-if="user.isAdmin"
+            icon="mdi-plus"
+            class="mb-4"
+            color="primary"
+            location="bottom end"
+            size="40"
+            absolute
+            offset
+            appear
+            app
+            @click.stop="editorDialog = true"
+          ></v-fab>
+            <v-card-title>
+              {{ author.name }}
+              <AuthorButtons :author="author" />
+            </v-card-title>
           </v-img>
 
-          <div v-if="authorInformation.about">
+          <div v-if="author.about">
             <v-card-subtitle>About</v-card-subtitle>
-            <v-card-text>{{ authorInformation.about }}</v-card-text>
+            <v-card-text>{{ author.about }}</v-card-text>
           </div>
 
           <v-card-subtitle>
-            Number of songs: {{ authorInformation.numberOfSongs }}
+            Number of songs: {{ author.numberOfSongs }}
           </v-card-subtitle>
 
           <v-list>
             <v-list-item
-              v-for="song in authorInformation.songs"
+              v-for="song in author.songs"
               :key="song.id"
               :title="song.title"
-              @click="$router.push(`/songs/${authorInformation.author}/${song.title}`)"
+              @click="$router.push(`/authors/${author.id}/songs/${song.id}`)"
             >
               <template v-slot:append>
-                <v-btn
-                  :color="isLoggedIn && song.isFavorite ? 'red' : 'medium-emphasis'"
-                  icon="mdi-heart"
-                  size="small"
-                  variant="plain"
-                  @click.stop="toggleFavorite(song)"
-                ></v-btn>
-                <v-btn
-                  icon="mdi-share-variant"
-                  size="small"
-                  variant="plain"
-                  @click.stop="shareSong(song.id)"
-                ></v-btn>
+                <SongButtons
+                  :song="song"
+                />
+                <div v-if="user.isAdmin">
+                  <v-btn
+                    icon="mdi-delete"
+                    size="small"
+                    variant="plain"
+                    @click.stop="deleteSong(song)"
+                  ></v-btn>
+                </div>
               </template>
             </v-list-item>
           </v-list>
@@ -61,78 +75,77 @@
       </v-col>
     </v-row>
   </v-container>
+  <SongEditor v-model="editorDialog" :author="author" />
 </template>
 
 <script>
+import {mapGetters} from "vuex";
 import Header from "@/components/Header.vue";
+import AuthorButtons from "@/components/AuthorButtons.vue";
+import SongButtons from "@/components/SongButtons.vue";
+import SongEditor from "@/components/SongEditor.vue";
+
 export default {
   name: "Author",
+  components: {AuthorButtons},
   data() {
     return {
-      authorInformation: {
+      author: {
+        id: null,
+        name: null,
         about: null,
-        author: null,
-        coverImage: null,
-        numberOfSongs: null
+        image: null,
+        numberOfSongs: null,
+        isFavorite: false,
+        songs: []
       },
+      editorDialog: false,
       error: null,
       loading: true
     };
   },
   async created() {
-    await this.fetchAuthorData();
+    await this.fetchAuthorData(this.$route.params.author_id);
   },
   beforeRouteUpdate(to, from, next) {
-    this.fetchAuthorData(to.params.author);
+    this.fetchAuthorData(to.params.author_id);
     next();
   },
   computed: {
-    isLoggedIn() {
-      return this.$store.state.isLoggedIn;
-    }
+    ...mapGetters(['user'])
   },
   methods: {
-    async fetchAuthorData(authorName = this.$route.params.author) {
+    async fetchAuthorData(authorId) {
       this.loading = true;
       this.error = null;
       try {
-        const response = await fetch(`/api/author/${authorName}`);
+        const response = await fetch(`/api/authors/${authorId}`);
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
-        this.authorInformation = await response.json();
+        this.author = await response.json();
       } catch (error) {
         this.error = error.message;
       } finally {
         this.loading = false;
       }
     },
-    async toggleFavorite(song) {
-      if (!this.isLoggedIn) {
-        // this.$router.push('/login');
-        return;
-      }
+    async deleteSong(song) {
       try {
-        song.isFavorite = !song.isFavorite;
-        const response = await fetch('/api/toggle_favorite_song', {
-          method: 'POST',
+        const response = await fetch(`/api/songs/${song.id}`, {
+          method: 'DELETE',
           headers: {
             'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ song_id: song.id })
+          }
         });
         if (!response.ok) {
-          throw new Error('Failed to toggle favorite');
+          throw new Error('Failed to delete song');
         }
-        // Обработка успешного добавления/удаления из избранного
-        console.log('Toggled favorite song');
+        console.log('Deleted song:', song.id);
+        await this.fetchAuthorData(this.author.id)
       } catch (error) {
-        console.error('Error toggling favorite:', error);
+        console.error('Error while deleting song:', error);
       }
-    },
-    shareSong(songId) {
-      // Логика для поделиться песней
-      console.log('Shared song:', songId);
     }
   }
 };

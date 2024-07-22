@@ -18,8 +18,8 @@
           <v-btn type="submit" color="primary">Login</v-btn>
         </v-form>
       </v-card-text>
-      <v-card-text>
-        <v-alert v-if="errorMessage" type="error">{{ errorMessage }}</v-alert>
+      <v-card-text v-if="errorMessage">
+        <v-alert type="error">{{ errorMessage }}</v-alert>
       </v-card-text>
       <v-card-text>
         <v-row class="px-5" align="center" justify="space-between">

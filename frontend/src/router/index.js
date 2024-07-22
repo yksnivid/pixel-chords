@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '@/views/Home.vue'
-import AddSong from '@/views/AddSong.vue'
+import Account from '@/views/Account.vue'
+import Favorites from "@/views/Favorites.vue";
 import Authors from '@/views/Authors.vue'
 import Author from '@/views/Author.vue'
 import Song from '@/views/Song.vue'
@@ -16,9 +17,16 @@ const router = createRouter({
       component: Home
     },
     {
-      path: '/add/song',
-      name: 'addSong',
-      component: AddSong
+      path: '/account',
+      name: 'account',
+      component: Account,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/favorites',
+      name: 'favorites',
+      component: Favorites,
+      meta: { requiresAuth: true }
     },
     {
       path: '/authors',
@@ -26,12 +34,12 @@ const router = createRouter({
       component: Authors
     },
     {
-      path: '/author/:author',
+      path: '/authors/:author_id',
       name:'author',
       component: Author
     },
     {
-      path: '/songs/:author/:title',
+      path: '/authors/:author_id/songs/:song_id',
       name: 'song',
       component: Song
     },
@@ -47,9 +55,8 @@ router.beforeEach(async (to, from, next) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
 
   if (requiresAuth && !store.state.isLoggedIn) {
-    await store.dispatch('login');
     if (!store.state.isLoggedIn) {
-      return next('/login');
+      return next('/');
     }
   }
 

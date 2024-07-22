@@ -17,17 +17,23 @@
           <v-text-field
             v-model="registerData.password"
             label="Password"
-            type="password"
+            :rules="[value => value.length >= 6 || 'Too short']"
             required
+            :append-inner-icon="visible ? 'mdi-eye-off' : 'mdi-eye'"
+            :type="visible ? 'text' : 'password'"
+            @click:append-inner="visible = !visible"
           ></v-text-field>
           <v-btn type="submit" color="primary">Submit</v-btn>
-          <v-alert v-if="errorMessage" type="error">{{ errorMessage }}</v-alert>
         </v-form>
+      </v-card-text>
+      <v-card-text v-if="errorMessage">
+        <v-alert type="error">{{ errorMessage }}</v-alert>
       </v-card-text>
       <v-card-actions>
         <v-btn text @click="closeDialog">Cancel</v-btn>
       </v-card-actions>
     </v-card>
+
   </v-dialog>
 </template>
 
@@ -49,6 +55,7 @@ export default {
         password: '',
       },
       errorMessage: null,
+      visible: false
     };
   },
   watch: {

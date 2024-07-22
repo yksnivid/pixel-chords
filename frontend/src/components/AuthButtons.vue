@@ -1,29 +1,35 @@
 <template>
   <v-row align="center" justify="end">
-    <v-col cols="auto" v-if="!isLoggedIn">
-      <v-btn icon="mdi-account" @click="loginDialog = true" />
+    <v-col cols="auto" v-if="!user.isLoggedIn">
+      <v-avatar color="grey-darken-3" icon="mdi-account" @click="loginDialog = true" />
     </v-col>
     <template v-else>
       <v-col cols="auto">
         <v-menu v-model="menu" :close-on-content-click="false">
           <template v-slot:activator="{ props }">
             <v-avatar
-              image="@/assets/avatar.png"
               size="40"
               v-bind="props"
-            ></v-avatar>
+              color="error"
+            ><div class="text-h6 font-weight-bold">{{ user.user[0].toUpperCase() }}</div></v-avatar>
           </template>
           <v-card>
             <v-card-title class="text-center">
               <v-avatar
-                :class="isAdmin ? 'admin-avatar' : null"
+                :class="user.isAdmin ? 'admin-avatar' : null"
                 size="100"
-                image="@/assets/avatar.png"
-              ></v-avatar>
+                color="error"
+              ><div class="text-h3 font-weight-bold">{{ user.user[0].toUpperCase() }}</div></v-avatar>
             </v-card-title>
-            <v-card-subtitle class="text-center"> {{ userName }} </v-card-subtitle>
+            <v-card-title class="text-center"> {{ user.user }} </v-card-title>
 
-            <v-list density="compact" nav>
+            <v-list density="compact">
+              <v-list-item density="compact" title="Light theme">
+                <template v-slot:prepend>
+                  <v-switch class="pr-3" hide-details @click="toggleTheme"></v-switch>
+                </template>
+              </v-list-item>
+              <v-divider></v-divider>
               <v-list-item title="Account" prepend-icon="mdi-account" @click="$router.push('/account')" />
               <v-list-item title="Favorites" prepend-icon="mdi-heart" @click="$router.push('/favorites')" />
               <v-list-item title="Sign out" prepend-icon="mdi-logout" @click="logout" />
@@ -38,7 +44,7 @@
 
 <script>
 import LoginDialog from '@/components/LoginDialog.vue';
-import {mapActions, mapGetters} from "vuex";
+import { mapActions, mapGetters } from "vuex";
 
 export default {
   name: 'AuthButtons',
@@ -55,13 +61,20 @@ export default {
     ...mapActions(['logout'])
   },
   computed: {
-   ...mapGetters(['isLoggedIn', 'userName', 'isAdmin'])
+   ...mapGetters(['user'])
   }
 };
 </script>
 
-<style scoped>
-.admin-avatar {
-  box-shadow: 0 0 10px 2px red;
+<script setup>
+import { useTheme } from 'vuetify'
+
+const theme = useTheme()
+
+function toggleTheme () {
+  theme.global.name.value = theme.global.current.value.dark ? 'light' : 'dark'
 }
+</script>
+
+<style scoped>
 </style>

@@ -31,7 +31,7 @@
           v-for="author in searchResults.authors"
           :key="author.id"
           :prepend-avatar="author.image"
-          @click="$router.push(`/author/${author.name}`)"
+          @click="$router.push(`/authors/${author.id}`)"
           link
         >
           <v-list-item-title>{{ author.name }}</v-list-item-title>
@@ -48,8 +48,8 @@
           v-for="song in searchResults.songs"
           :key="song.id"
           :title="song.title"
-          :subtitle="song.author"
-          @click="$router.push(`/songs/${song.author}/${song.title}`)"
+          :subtitle="song.author.name"
+          @click="$router.push(`/authors/${song.author.id}/songs/${song.id}`)"
           density="compact"
           link
         >
@@ -98,7 +98,10 @@ export default {
       this.performSearch(this.searchQuery);
     }, 300),
     async performSearch(query) {
-      if (query.length < 2) return;
+      if (query.length < 3) {
+        this.errorMessage = null;
+        return;
+      }
       this.isLoading = true;
       try {
         const response = await fetch(`/api/search/${query}`);

@@ -79,22 +79,14 @@
             <v-list-item
               v-for="song in songs"
               :key="song.id"
-              :title="`${song.author} - ${song.title}`"
-              :prepend-avatar="song.image"
-              @click="$router.push(`/songs/${song.author}/${song.title}`)"
+              :title="`${song.author.name} - ${song.title}`"
+              :prepend-avatar="song.author.image"
+              @click="$router.push(`/authors/${song.author.id}/songs/${song.id}`)"
             >
               <template v-slot:append>
-                <v-btn
-                  :color="isLoggedIn && song.isFavorite ? 'red' : 'medium-emphasis'"
-                  icon="mdi-heart"
-                  size="small"
-                  variant="plain"
-                ></v-btn>
-                <v-btn
-                  icon="mdi-share-variant"
-                  size="small"
-                  variant="plain"
-                ></v-btn>
+                <SongButtons
+                  :song="song"
+                />
               </template>
             </v-list-item>
           </v-list>
@@ -105,10 +97,12 @@
 </template>
 
 <script>
+import SongButtons from "@/components/SongButtons.vue";
 import {mapGetters} from "vuex";
 
 export default {
   name: 'Home',
+  components: {SongButtons},
   data() {
     return {
       songs: []
@@ -122,7 +116,7 @@ export default {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const song = await response.json();
-        this.$router.push(`/songs/${song.author}/${song.title}`);
+        this.$router.push(`/authors/${song.author.id}/songs/${song.id}`);
       } catch (error) {
         console.error('Error fetching random song:', error);
       }
@@ -138,9 +132,6 @@ export default {
         console.error('Error fetching songs:', error);
       }
     },
-  },
-  computed: {
-    ...mapGetters(["isLoggedIn"])
   },
   async created() {
     await this.fetchRecentSongs();

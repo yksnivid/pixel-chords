@@ -9,7 +9,7 @@
         sm="6"
         md="4"
       >
-        <v-card @click="$router.push(`author/${author.author}`)">
+        <v-card @click="$router.push(`authors/${author.id}`)">
           <v-img
             :src="author.image"
             class="align-end"
@@ -17,23 +17,18 @@
             height="200px"
             cover
           >
-            <v-card-title class="text-white" v-text="author.author"></v-card-title>
+            <v-card-title class="text-white" v-text="author.name"></v-card-title>
             <v-card-subtitle v-text="'Songs: ' + author.numberOfSongs"></v-card-subtitle>
           </v-img>
           <v-card-actions >
+            <v-btn
+              class="ms-2"
+              size="small"
+              text="Go to author"
+              variant="outlined"
+            ></v-btn>
             <v-spacer></v-spacer>
-            <v-btn
-              :color="isLoggedIn && author.isFavorite ? 'red' : 'medium-emphasis'"
-              icon="mdi-heart"
-              size="small"
-              @click.stop="toggleFavorite(author)"
-            ></v-btn>
-            <v-btn
-              color="medium-emphasis"
-              icon="mdi-share-variant"
-              size="small"
-              @click.stop="null"
-            ></v-btn>
+            <AuthorButtons :author="author" />
           </v-card-actions>
         </v-card>
       </v-col>
@@ -43,9 +38,13 @@
 
 <script>
 import Header from '@/components/Header.vue';
+import {mapGetters} from "vuex";
+import AuthorButtons from "@/components/AuthorButtons.vue";
+
 export default {
   name: 'Authors',
   components: {
+    AuthorButtons,
     Header
   },
   data() {
@@ -57,9 +56,7 @@ export default {
     await this.fetchAuthors();
   },
   computed: {
-    isLoggedIn() {
-      return this.$store.state.isLoggedIn;
-    }
+    ...mapGetters(['user'])
   },
   methods: {
     async fetchAuthors() {
@@ -71,29 +68,6 @@ export default {
         this.authors = await response.json();
       } catch (error) {
         console.error('Error fetching authors:', error);
-      }
-    },
-    async toggleFavorite(author) {
-      if (!this.isLoggedIn) {
-        this.$router.push('/login');
-        return;
-      }
-      try {
-        author.isFavorite = !author.isFavorite;
-        const response = await fetch('/api/toggle_favorite_author', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ author_id: author.id })
-        });
-        if (!response.ok) {
-          throw new Error('Failed to toggle favorite');
-        }
-        // Обработка успешного добавления/удаления из избранного
-        console.log('Toggled favorite author');
-      } catch (error) {
-        console.error('Error toggling favorite:', error);
       }
     }
   }
