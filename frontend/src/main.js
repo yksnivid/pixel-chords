@@ -17,4 +17,8 @@ const app = createApp(App)
 
 registerPlugins(app)
 
-app.mount('#app')
+import store from '@/store'
+
+store.dispatch('checkAuthStatus').then(() => {
+  app.use(store).mount('#app');
+});

@@ -1,6 +1,7 @@
 import os
 from flask import Flask, send_from_directory
-from .extensions import db, migrate, login_manager, bcrypt, jwt
+from flask_cors import CORS
+from .extensions import db, migrate, login_manager, bcrypt, limiter
 from .models import Author, Song
 from .routes import register_routes
 from .auth_routes import register_auth_routes
@@ -20,7 +21,8 @@ def create_app():
     migrate.init_app(app, db)
     login_manager.init_app(app)
     bcrypt.init_app(app)
-    jwt.init_app(app)
+    limiter.init_app(app)
+    CORS(app, supports_credentials=True)
 
     register_routes(app)
     register_auth_routes(app)

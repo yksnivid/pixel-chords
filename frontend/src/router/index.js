@@ -1,12 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '@/views/Home.vue'
-import AddSong from '@/views/AddSong.vue'
+import Account from '@/views/Account.vue'
+import Favorites from "@/views/Favorites.vue";
 import Authors from '@/views/Authors.vue'
 import Author from '@/views/Author.vue'
 import Song from '@/views/Song.vue'
-import Register from '@/views/Register.vue'
-import Login from '@/views/Login.vue'
 import NotFound from "@/views/NotFound.vue";
+import store from '@/store'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -17,19 +17,16 @@ const router = createRouter({
       component: Home
     },
     {
-      path: '/register',
-      name: 'register',
-      component: Register
+      path: '/account',
+      name: 'account',
+      component: Account,
+      meta: { requiresAuth: true }
     },
     {
-      path: '/login',
-      name: 'login',
-      component: Login
-    },
-    {
-      path: '/add/song',
-      name: 'addSong',
-      component: AddSong
+      path: '/favorites',
+      name: 'favorites',
+      component: Favorites,
+      meta: { requiresAuth: true }
     },
     {
       path: '/authors',
@@ -37,12 +34,12 @@ const router = createRouter({
       component: Authors
     },
     {
-      path: '/author/:author',
+      path: '/authors/:author_id',
       name:'author',
       component: Author
     },
     {
-      path: '/songs/:author/:title',
+      path: '/authors/:author_id/songs/:song_id',
       name: 'song',
       component: Song
     },
@@ -54,15 +51,16 @@ const router = createRouter({
   ]
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
-  const token = localStorage.getItem('token');
 
-  if (requiresAuth && !token) {
-    next('/login');
-  } else {
-    next();
+  if (requiresAuth && !store.state.isLoggedIn) {
+    if (!store.state.isLoggedIn) {
+      return next('/');
+    }
   }
+
+  next();
 });
 
 export default router;
