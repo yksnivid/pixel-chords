@@ -2,6 +2,7 @@ import { createStore } from 'vuex';
 
 const store = createStore({
   state: {
+    isAuthChecked: false,
     isLoggedIn: false,
     id: null,
     user: null,
@@ -10,6 +11,7 @@ const store = createStore({
   },
   mutations: {
     SET_AUTH(state, { isLoggedIn, id, user, role }) {
+      state.isAuthChecked = true; // Установка флага проверки статуса авторизации
       state.isLoggedIn = isLoggedIn;
       state.id = id;
       state.user = user;
@@ -22,15 +24,19 @@ const store = createStore({
       state.user = null;
       state.role = null;
       state.errorMessage = null; // Сброс ошибки при выходе
+      state.isAuthChecked = false;
     },
     SET_ERROR(state, errorMessage) {
+      state.isAuthChecked = true;
       state.errorMessage = errorMessage; // Установка сообщения об ошибке
     }
   },
   actions: {
     async checkAuthStatus({ dispatch }) {
-      // Проверяем статус авторизации при загрузке приложения
-      await dispatch('fetchCurrentUser');
+      if (!store.state.isAuthChecked) {
+        // Проверяем статус авторизации при загрузке приложения
+        await dispatch('fetchCurrentUser');
+      }
     },
     async fetchCurrentUser({ commit }) {
       try {

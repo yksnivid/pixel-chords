@@ -23,7 +23,7 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/favorites',
+      path: '/account/favorites',
       name: 'favorites',
       component: Favorites,
       meta: { requiresAuth: true }
@@ -54,13 +54,12 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
 
-  if (requiresAuth && !store.state.isLoggedIn) {
-    if (!store.state.isLoggedIn) {
-      return next('/');
-    }
+  if (requiresAuth) {
+    await store.dispatch('checkAuthStatus')
+    !store.state.isLoggedIn ? next({ path: '/' }) : next();
+  } else {
+    next();
   }
-
-  next();
 });
 
 export default router;

@@ -75,21 +75,7 @@
           <v-card-title class="text-h5">
             Last updates
           </v-card-title>
-          <v-list>
-            <v-list-item
-              v-for="song in songs"
-              :key="song.id"
-              :title="`${song.author.name} - ${song.title}`"
-              :prepend-avatar="song.author.image"
-              @click="$router.push(`/authors/${song.author.id}/songs/${song.id}`)"
-            >
-              <template v-slot:append>
-                <SongButtons
-                  :song="song"
-                />
-              </template>
-            </v-list-item>
-          </v-list>
+            <SongsList :songs="songs" />
         </v-card>
       </v-col>
     </v-row>
@@ -98,11 +84,12 @@
 
 <script>
 import SongButtons from "@/components/SongButtons.vue";
+import SongsList from "@/components/SongsList.vue";
 import {mapGetters} from "vuex";
 
 export default {
   name: 'Home',
-  components: {SongButtons},
+  components: {SongsList, SongButtons},
   data() {
     return {
       songs: []

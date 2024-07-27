@@ -31,7 +31,7 @@
               </v-list-item>
               <v-divider></v-divider>
               <v-list-item title="Account" prepend-icon="mdi-account" @click="$router.push('/account')" />
-              <v-list-item title="Favorites" prepend-icon="mdi-heart" @click="$router.push('/favorites')" />
+              <v-list-item title="Favorites" prepend-icon="mdi-heart" @click="$router.push('/account/favorites')" />
               <v-list-item title="Sign out" prepend-icon="mdi-logout" @click="logout" />
             </v-list>
           </v-card>
@@ -71,8 +71,17 @@ import { useTheme } from 'vuetify'
 
 const theme = useTheme()
 
+const savedTheme = localStorage.getItem('theme');
+
+if (savedTheme) {
+  theme.global.name.value = savedTheme;
+} else {
+  theme.global.name.value = theme.global.current.value.dark ? 'dark' : 'light';
+}
+
 function toggleTheme () {
   theme.global.name.value = theme.global.current.value.dark ? 'light' : 'dark'
+  localStorage.setItem('theme', theme.global.name.value);
 }
 </script>
 

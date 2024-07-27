@@ -9,6 +9,7 @@
             height="200"
             :src="author.image"
             cover
+            gradient="to bottom, rgba(0,0,0,.1), rgba(0,0,0,.5)"
           >
           <v-fab
             v-if="user.isAdmin"
@@ -46,17 +47,35 @@
               @click="$router.push(`/authors/${author.id}/songs/${song.id}`)"
             >
               <template v-slot:append>
-                <SongButtons
-                  :song="song"
-                />
-                <div v-if="user.isAdmin">
-                  <v-btn
-                    icon="mdi-delete"
-                    size="small"
-                    variant="plain"
-                    @click.stop="deleteSong(song)"
-                  ></v-btn>
-                </div>
+                <SongButtons :song="song" />
+                <v-btn
+                  v-if="user.isAdmin"
+                  icon="mdi-delete"
+                  size="small"
+                  variant="plain"
+                  @click.stop="deleteDialog = true"
+                ></v-btn>
+                <v-dialog
+                  v-model="deleteDialog"
+                >
+                  <v-card
+                    max-width="400"
+                    :text='`Are you sure you want to delete song "${song.title}"?`'
+                    title="Delete song"
+                  >
+                    <template v-slot:actions>
+                      <v-btn
+                        text="Yes, delete"
+                        @click="deleteSong(song)"
+                        color="error"
+                      ></v-btn>
+                      <v-btn
+                        text="No"
+                        @click="deleteDialog = false"
+                      ></v-btn>
+                    </template>
+                  </v-card>
+                </v-dialog>
               </template>
             </v-list-item>
           </v-list>
@@ -100,6 +119,7 @@ export default {
         songs: []
       },
       editorDialog: false,
+      deleteDialog: false,
       error: null,
       loading: true
     };
@@ -142,6 +162,7 @@ export default {
           throw new Error('Failed to delete song');
         }
         console.log('Deleted song:', song.id);
+        this.deleteDialog = false;
         await this.fetchAuthorData(this.author.id)
       } catch (error) {
         console.error('Error while deleting song:', error);

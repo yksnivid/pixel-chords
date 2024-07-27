@@ -88,6 +88,37 @@ def register_routes(app: Flask):
 
         return jsonify({'error': 'Song not found'}), 404
 
+    @app.route('/api/users/<int:user_id>/favorites', methods=['GET'])
+    @login_required
+    def get_favorites(user_id):
+
+        if user_id != current_user.id:
+            return jsonify({'error': 'Unauthorized to getting favorites'}), 401
+
+        data = {
+            'songs': [{
+                'id': song.id,
+                'title': song.title,
+                'author': {
+                    'id': song.author.id,
+                    'name': song.author.name,
+                    'image': song.author.image
+                },
+                'isFavorite': True
+            } for song in current_user.favorite_songs],
+
+            'authors': [{
+                'id': author.id,
+                'name': author.name,
+                'numberOfSongs': len(author.songs),
+                'image': author.image,
+                'isFavorite': True
+
+            } for author in current_user.favorite_authors]
+        }
+
+        return jsonify(data), 200
+
     @app.route('/api/authors', methods=['GET'])
     def get_authors():
         authors = Author.query.order_by(Author.name).all()
@@ -145,7 +176,12 @@ def register_routes(app: Flask):
         return jsonify({'error': 'Author not found'}), 404
 
     @app.route('/api/songs', methods=['POST'])
+    @login_required
     def create_song():
+
+        if current_user.role!= 'admin':
+            return jsonify({'error': 'Unauthorized to create song'}), 401
+
         data = request.get_json()
 
         author_id = data.get('author_id')
@@ -166,9 +202,10 @@ def register_routes(app: Flask):
         return jsonify({'message': 'Song added successfully', 'id': new_song.id}), 201
 
     @app.route('/api/songs/<int:song_id>', methods=['PUT'])
+    @login_required
     def update_song(song_id):
 
-        if not current_user.is_authenticated or current_user.role != 'admin':
+        if current_user.role != 'admin':
             return jsonify({'error': 'Unauthorized to update song'}), 401
 
         data = request.get_json()
@@ -190,7 +227,12 @@ def register_routes(app: Flask):
         return jsonify({'message': 'Song updated successfully'}), 200
 
     @app.route('/api/songs/<int:song_id>', methods=['DELETE'])
+    @login_required
     def delete_song(song_id):
+
+        if current_user.role != 'admin':
+            return jsonify({'error': 'Unauthorized to delete song'}), 401
+
         song = Song.query.get(song_id)
 
         if not song:
@@ -200,6 +242,46 @@ def register_routes(app: Flask):
         db.session.commit()
 
         return jsonify({'message': 'Song deleted successfully'}), 200
+
+    @app.route('/api/authors', methods=['POST'])
+    @login_required
+    def create_author():
+
+        if current_user.role != 'admin':
+            return jsonify({'error': 'Unauthorized to create author'}), 401
+
+        data = request.get_json()
+
+        name = data.get('name')
+        about = data.get('about')
+        image = data.get('image')
+        print(name, about, image)
+
+        if not name or not about:
+            return jsonify({'error': 'Missing name or about in request data'}), 400
+
+        new_author = Author(name=name, about=about, image=image)
+        db.session.add(new_author)
+        db.session.commit()
+
+        return jsonify({'message': 'Author added successfully', 'id': new_author.id}), 201
+
+    @app.route('/api/authors/<int:author_id>', methods=['DELETE'])
+    @login_required
+    def delete_author(author_id):
+
+        if current_user.role!= 'admin':
+            return jsonify({'error': 'Unauthorized to delete author'}), 401
+
+        author = Author.query.get(author_id)
+
+        if not author:
+            return jsonify({'error': f'Author with id={author_id} not found'}), 404
+
+        db.session.delete(author)
+        db.session.commit()
+
+        return jsonify({'message': 'Author deleted successfully'}), 200
 
     @app.route('/api/users/<int:user_id>/favorites', methods=['POST', 'DELETE'])
     @login_required
