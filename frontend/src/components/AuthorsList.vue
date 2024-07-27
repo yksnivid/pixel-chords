@@ -7,7 +7,7 @@
       sm="6"
       md="4"
     >
-      <v-card @click="$router.push(`authors/${author.id}`)">
+      <v-card @click="$router.push(`/authors/${author.id}`)">
         <v-img
           :src="author.image"
           class="align-end"
