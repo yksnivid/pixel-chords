@@ -11,28 +11,42 @@
             cover
             gradient="to bottom, rgba(0,0,0,.1), rgba(0,0,0,.5)"
           >
-          <v-fab
-            v-if="user.isAdmin"
-            icon="mdi-plus"
-            class="mb-4"
-            color="primary"
-            location="bottom end"
-            size="40"
-            absolute
-            offset
-            appear
-            app
-            @click.stop="editorDialog = true"
-          ></v-fab>
             <v-card-title>
-              {{ author.name }}
-              <AuthorButtons :author="author" />
+              <v-row no-gutters align="center">
+                <div v-if="!editMode">
+                  {{ author.name }}
+                </div>
+                <v-text-field
+                  v-else
+                  v-model="author.name"
+                  density="compact"
+                  hide-details
+                ></v-text-field>
+                <AuthorButtons v-if="!editMode" :author="author" />
+                <v-spacer></v-spacer>
+                <div v-if="user.isAdmin">
+                  <v-btn
+                    v-if="editMode"
+                    icon="mdi-content-save"
+                    variant="plain"
+                    @click.stop="updateAuthor"
+                  ></v-btn>
+                  <v-btn
+                    :icon="editMode ? 'mdi-close' : 'mdi-pencil'"
+                    size="small"
+                    variant="plain"
+                    @click.stop="editMode = !editMode"
+                  ></v-btn>
+                </div>
+
+              </v-row>
             </v-card-title>
           </v-img>
 
           <div v-if="author.about">
             <v-card-subtitle>About</v-card-subtitle>
-            <v-card-text>{{ author.about }}</v-card-text>
+            <v-card-text v-if="!editMode">{{ author.about }}</v-card-text>
+            <v-textarea v-else v-model="author.about" rows="10"></v-textarea>
           </div>
 
           <v-card-subtitle>
@@ -93,8 +107,28 @@
         ></v-progress-circular>
       </v-col>
     </v-row>
+    <v-fab
+      v-if="user.isAdmin"
+      icon="mdi-plus"
+      class="mb-10"
+      color="primary"
+      location="bottom end"
+      size="40"
+      offset
+      appear
+      app
+      @click.stop="editorDialog = true"
+    ></v-fab>
   </v-container>
   <SongEditor v-model="editorDialog" :author="author" />
+  <v-snackbar v-model="showMessage" timeout="3000">
+    {{ message }}
+    <template v-slot:actions>
+      <v-btn variant="text" @click="showMessage = false">
+        Close
+      </v-btn>
+    </template>
+  </v-snackbar>
 </template>
 
 <script>
@@ -120,6 +154,9 @@ export default {
       },
       editorDialog: false,
       deleteDialog: false,
+      editMode: false,
+      showMessage: false,
+      message: null,
       error: null,
       loading: true
     };
@@ -166,6 +203,31 @@ export default {
         await this.fetchAuthorData(this.author.id)
       } catch (error) {
         console.error('Error while deleting song:', error);
+      }
+    },
+    async updateAuthor() {
+      try {
+        const response = await fetch(`/api/authors/${this.author.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name: this.author.name,
+            about: this.author.about
+          })
+        })
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        this.message = 'Author updated successfully';
+        console.log('Author updated successfully, author id:', this.author.id);
+      } catch (error) {
+        this.message = 'Error while editing author';
+        console.error('Error while updating author:', error);
+      } finally {
+        this.showMessage = true;
+        this.editMode = false;
       }
     }
   }

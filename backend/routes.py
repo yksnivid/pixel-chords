@@ -255,7 +255,6 @@ def register_routes(app: Flask):
         name = data.get('name')
         about = data.get('about')
         image = data.get('image')
-        print(name, about, image)
 
         if not name or not about:
             return jsonify({'error': 'Missing name or about in request data'}), 400
@@ -265,6 +264,34 @@ def register_routes(app: Flask):
         db.session.commit()
 
         return jsonify({'message': 'Author added successfully', 'id': new_author.id}), 201
+
+    @app.route('/api/authors/<int:author_id>', methods=['PUT'])
+    @login_required
+    def update_author(author_id):
+
+        if current_user.role != 'admin':
+            return jsonify({'error': 'Unauthorized to update author'}), 401
+
+        data = request.get_json()
+
+        name = data.get('name')
+        about = data.get('about')
+        # image = data.get('image')
+
+        if not name or not about:
+            return jsonify({'error': 'Missing name or about in request data'}), 400
+
+        author = Author.query.get(author_id)
+
+        if not author:
+            return jsonify({'error': f'Author with id={author_id} not found'}), 404
+
+        author.name = name
+        author.about = about
+        # author.image = image
+        db.session.commit()
+
+        return jsonify({'message': 'Author updated successfully'}), 200
 
     @app.route('/api/authors/<int:author_id>', methods=['DELETE'])
     @login_required

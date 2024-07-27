@@ -1,6 +1,7 @@
 <template>
   <Header />
   <v-container fluid>
+    <AuthorsList :authors="authors" />
     <v-fab
       v-if="user.isAdmin"
       icon="mdi-plus"
@@ -13,7 +14,6 @@
       app
       @click.stop="editorDialog = true"
     ></v-fab>
-    <AuthorsList :authors="authors" />
     <AuthorEditor v-model="editorDialog" />
   </v-container>
 </template>
