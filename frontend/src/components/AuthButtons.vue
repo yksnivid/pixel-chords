@@ -26,7 +26,12 @@
             <v-list density="compact">
               <v-list-item density="compact" title="Light theme">
                 <template v-slot:prepend>
-                  <v-switch class="pr-3" hide-details @click="toggleTheme"></v-switch>
+                  <v-switch
+                    :model-value="theme.global.name.value === 'light'"
+                    class="pr-3"
+                    hide-details
+                    @click="toggleTheme"
+                  ></v-switch>
                 </template>
               </v-list-item>
               <v-divider></v-divider>
