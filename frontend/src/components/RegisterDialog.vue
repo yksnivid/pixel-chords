@@ -3,31 +3,41 @@
     <v-card>
       <v-card-title class="headline">Sign Up</v-card-title>
       <v-card-text>
-        <v-form @submit.prevent="submitRegister">
+        <v-form v-model="isValid" @submit.prevent="submitRegister" validate-on="input lazy">
           <v-text-field
             v-model="registerData.username"
             label="Username"
+            :rules="[value => value.length >= 1 || 'Too short']"
             required
           ></v-text-field>
           <v-text-field
             v-model="registerData.email"
             label="Email"
             required
+            :rules="[v => /^[a-z.-]+@[a-z.-]+\.[a-z]+$/i.test(value) || 'Invalid Email address']"
           ></v-text-field>
           <v-text-field
             v-model="registerData.password"
             label="Password"
-            :rules="[value => value.length >= 6 || 'Too short']"
+            :rules="[value => value.length >= 6 || 'Password is too short']"
             required
             :append-inner-icon="visible ? 'mdi-eye-off' : 'mdi-eye'"
             :type="visible ? 'text' : 'password'"
             @click:append-inner="visible = !visible"
           ></v-text-field>
+          <v-text-field
+            v-if="!visible"
+            v-model="confirmPassword"
+            label="Confirm Password"
+            :rules="[value => value === registerData.password || 'Passwords do not match']"
+            required
+            :type="visible ? 'text' : 'password'"
+          ></v-text-field>
           <v-btn type="submit" color="primary">Submit</v-btn>
         </v-form>
       </v-card-text>
-      <v-card-text v-if="errorMessage">
-        <v-alert type="error">{{ errorMessage }}</v-alert>
+      <v-card-text v-if="message">
+        <v-alert type="error">{{ message }}</v-alert>
       </v-card-text>
       <v-card-actions>
         <v-btn text @click="closeDialog">Cancel</v-btn>
@@ -38,6 +48,8 @@
 </template>
 
 <script>
+import {mapActions} from "vuex";
+
 export default {
   name: 'RegisterDialog',
   props: {
@@ -54,7 +66,9 @@ export default {
         email: '',
         password: '',
       },
-      errorMessage: null,
+      isValid: false,
+      confirmPassword: '',
+      message: null,
       visible: false
     };
   },
@@ -67,7 +81,12 @@ export default {
     },
   },
   methods: {
+    ...mapActions(['login']),
     async submitRegister() {
+      if (!this.isValid) {
+        this.message = 'Check your registration form';
+        return;
+      }
       try {
         const response = await fetch('/api/users', {
           method: 'POST',
@@ -79,12 +98,13 @@ export default {
         const data = await response.json();
         if (response.ok) {
           this.dialog = false;
-          this.errorMessage = null;
+          this.message = null;
+          await this.login(this.registerData);
         } else {
-          this.errorMessage = data.error;
+          this.message = data.message;
         }
       } catch (error) {
-        this.errorMessage = 'Failed to register';
+        this.message = 'Failed to register';
       }
     },
     closeDialog() {

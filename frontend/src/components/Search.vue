@@ -13,7 +13,7 @@
           append-inner-icon="mdi-magnify"
           placeholder="Search here"
           density="compact"
-          variant="solo"
+          variant="filled"
           hide-details
           single-line
           :loading="isLoading"

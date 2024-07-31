@@ -2,13 +2,13 @@ from .extensions import db, bcrypt
 from flask_login import UserMixin
 
 favorites_authors = db.Table('favorites_authors',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('author_id', db.Integer, db.ForeignKey('authors.id'), primary_key=True)
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('author_id', db.Integer, db.ForeignKey('authors.id', ondelete='CASCADE'), primary_key=True)
 )
 
 favorites_songs = db.Table('favorites_songs',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('song_id', db.Integer, db.ForeignKey('songs.id'), primary_key=True)
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('song_id', db.Integer, db.ForeignKey('songs.id', ondelete='CASCADE'), primary_key=True)
 )
 
 
@@ -41,7 +41,7 @@ class User(db.Model, UserMixin):
                                        backref=db.backref('favorited_by', lazy=True))
     favorite_songs = db.relationship('Song', secondary=favorites_songs, lazy='subquery',
                                      backref=db.backref('favorited_by', lazy=True))
-    song_settings = db.relationship('UserSongSettings', back_populates='user', lazy=True)
+    song_settings = db.relationship('UserSongSettings', back_populates='user', lazy=True, cascade='all, delete-orphan')
 
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -52,8 +52,8 @@ class User(db.Model, UserMixin):
 
 class UserSongSettings(db.Model):
     __tablename__ = 'user_song_settings'
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
-    song_id = db.Column(db.Integer, db.ForeignKey('songs.id'), primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
+    song_id = db.Column(db.Integer, db.ForeignKey('songs.id', ondelete='CASCADE'), primary_key=True)
     transposition = db.Column(db.Integer, nullable=False, default=0)
     capo_position = db.Column(db.Integer, nullable=False, default=0)
     user = db.relationship('User', back_populates='song_settings')
