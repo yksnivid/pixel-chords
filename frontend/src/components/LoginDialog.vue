@@ -3,17 +3,19 @@
     <v-card>
       <v-card-title class="headline">Sign In</v-card-title>
       <v-card-text>
-        <v-form @submit.prevent="submitLogin">
+        <v-form v-model="isValid" @submit.prevent="submitLogin">
           <v-text-field
             v-model="loginData.username"
             label="Username"
             required
+            :rules="[value => value.length > 0 || 'Too short']"
           ></v-text-field>
           <v-text-field
             v-model="loginData.password"
             label="Password"
             type="password"
             required
+            :rules="[value => value.length > 0 || 'Too short']"
           ></v-text-field>
           <v-btn type="submit" color="primary">Login</v-btn>
         </v-form>
@@ -58,6 +60,7 @@ export default {
         username: '',
         password: '',
       },
+      isValid: false,
       errorMessage: null,
     };
   },
@@ -72,6 +75,10 @@ export default {
   methods: {
     ...mapActions(['login']),
     async submitLogin() {
+      if (!this.isValid) {
+        this.errorMessage = 'Check your credentials';
+        return
+      }
       const result = await this.login(this.loginData);
       if (result.success) {
         this.dialog = false;

@@ -11,7 +11,9 @@
               size="40"
               v-bind="props"
               color="error"
-            ><div class="text-h6 font-weight-bold">{{ user.user[0].toUpperCase() }}</div></v-avatar>
+            >
+              <div class="text-h6 font-weight-bold">{{ user.username[0].toUpperCase() }}</div>
+            </v-avatar>
           </template>
           <v-card>
             <v-card-title class="text-center">
@@ -19,14 +21,19 @@
                 :class="user.isAdmin ? 'admin-avatar' : null"
                 size="100"
                 color="error"
-              ><div class="text-h3 font-weight-bold">{{ user.user[0].toUpperCase() }}</div></v-avatar>
+              ><div class="text-h3 font-weight-bold">{{ user.username[0].toUpperCase() }}</div></v-avatar>
             </v-card-title>
-            <v-card-title class="text-center"> {{ user.user }} </v-card-title>
+            <v-card-title class="text-center"> {{ user.username }} </v-card-title>
 
             <v-list density="compact">
               <v-list-item density="compact" title="Light theme">
                 <template v-slot:prepend>
-                  <v-switch class="pr-3" hide-details @click="toggleTheme"></v-switch>
+                  <v-switch
+                    :model-value="theme.global.name.value === 'light'"
+                    class="pr-3"
+                    hide-details
+                    @click="toggleTheme"
+                  ></v-switch>
                 </template>
               </v-list-item>
               <v-divider></v-divider>

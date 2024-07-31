@@ -5,7 +5,7 @@
       class="text-caption text-disabled"
       style="position: absolute; right: 16px;"
     >
-      Pixel Chords &copy; {{ (new Date()).getFullYear() }} <span class="d-none d-sm-inline-block">Chords</span>
+      Pixel Chords &copy; {{ (new Date()).getFullYear() }}
     </div>
   </v-footer>
 </template>

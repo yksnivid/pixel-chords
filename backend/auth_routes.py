@@ -25,6 +25,46 @@ def register():
     return jsonify({'message': 'User registered successfully'}), 201
 
 
+@auth_bp.route('/api/users/<int:user_id>', methods=['DELETE'])
+@limiter.limit("3 per minute")
+@login_required
+def delete_user(user_id):
+
+    if current_user.id != user_id:
+        return jsonify({'message': 'Unauthorized to delete'}), 401
+
+    password = request.get_json().get('password')
+    user = User.query.get(user_id)
+
+    if not user.check_password(password):
+        return jsonify({'message': 'Wrong password'}), 401
+
+    db.session.delete(user)
+    db.session.commit()
+
+    return jsonify({'message': 'Deleted successfully'}), 200
+
+
+@auth_bp.route('/api/users/<int:user_id>/password', methods=['PUT'])
+@limiter.limit("3 per minute")
+@login_required
+def change_password(user_id):
+    if current_user.id != user_id:
+        return jsonify({'message': 'Unauthorized to change password'}), 401
+
+    data = request.get_json()
+    current_password = data.get('currentPassword')
+    new_password = data.get('newPassword')
+
+    if not current_user.check_password(current_password):
+        return jsonify({'message': 'Wrong password'}), 401
+
+    current_user.set_password(new_password)
+    db.session.commit()
+
+    return jsonify({'message': 'Password changed successfully'}), 200
+
+
 @auth_bp.route('/api/login', methods=['POST'])
 @limiter.limit("5 per minute")
 def login():
@@ -52,9 +92,15 @@ def logout():
 
 
 @auth_bp.route('/api/current_user', methods=['GET'])
+@limiter.limit("60 per minute")
 def get_current_user():
     if current_user.is_authenticated:
-        return jsonify({'id': current_user.id, 'user': current_user.username, 'role': current_user.role}), 200
+        return jsonify({
+            'id': current_user.id,
+            'username': current_user.username,
+            'email': current_user.email,
+            'role': current_user.role
+        }), 200
     return jsonify({'error': 'User not authenticated'}), 401
 
 

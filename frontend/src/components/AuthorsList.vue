@@ -27,34 +27,33 @@
           ></v-btn>
           <v-spacer></v-spacer>
           <AuthorButtons :author="author" />
-<!--          <v-btn-->
-<!--            v-if="user.isAdmin"-->
-<!--            icon="mdi-delete"-->
-<!--            size="small"-->
-<!--            variant="plain"-->
-<!--            @click.stop="deleteDialog = true"-->
-<!--          ></v-btn>-->
-<!--          <v-dialog-->
-<!--            v-model="deleteDialog"-->
-<!--          >-->
-<!--            <v-card-->
-<!--              max-width="400"-->
-<!--              :text='`Are you sure you want to delete author "${author.name}"?`'-->
-<!--              title="Delete song"-->
-<!--            >-->
-<!--              <template v-slot:actions>-->
-<!--                <v-btn-->
-<!--                  text="Yes, delete"-->
-<!--                  @click="deleteAuthor(author)"-->
-<!--                  color="error"-->
-<!--                ></v-btn>-->
-<!--                <v-btn-->
-<!--                  text="No"-->
-<!--                  @click="deleteDialog = false"-->
-<!--                ></v-btn>-->
-<!--              </template>-->
-<!--            </v-card>-->
-<!--          </v-dialog>-->
+          <v-btn
+            v-if="user.isAdmin"
+            icon="mdi-delete"
+            size="small"
+            variant="plain"
+            @click.stop="deleteDialog = true"
+          ></v-btn>
+          <v-dialog
+            v-model="deleteDialog"
+          >
+            <v-card
+              :text='`Are you sure you want to delete author "${author.name}"?`'
+              title="Delete song"
+            >
+              <template v-slot:actions>
+                <v-btn
+                  text="Yes, delete"
+                  @click="deleteAuthor(author)"
+                  color="error"
+                ></v-btn>
+                <v-btn
+                  text="No"
+                  @click="deleteDialog = false"
+                ></v-btn>
+              </template>
+            </v-card>
+          </v-dialog>
         </v-card-actions>
       </v-card>
     </v-col>

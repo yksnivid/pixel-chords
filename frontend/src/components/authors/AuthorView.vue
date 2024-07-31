@@ -13,40 +13,24 @@
           >
             <v-card-title>
               <v-row no-gutters align="center">
-                <div v-if="!editMode">
-                  {{ author.name }}
-                </div>
-                <v-text-field
-                  v-else
-                  v-model="author.name"
-                  density="compact"
-                  hide-details
-                ></v-text-field>
-                <AuthorButtons v-if="!editMode" :author="author" />
+                <div>{{ author.name }}</div>
+                <AuthorButtons :author="author" />
                 <v-spacer></v-spacer>
                 <div v-if="user.isAdmin">
                   <v-btn
-                    v-if="editMode"
-                    icon="mdi-content-save"
-                    variant="plain"
-                    @click.stop="updateAuthor"
-                  ></v-btn>
-                  <v-btn
-                    :icon="editMode ? 'mdi-close' : 'mdi-pencil'"
+                    icon="mdi-pencil"
                     size="small"
                     variant="plain"
-                    @click.stop="editMode = !editMode"
+                    @click.stop="$emit('edit-mode', true)"
                   ></v-btn>
                 </div>
-
               </v-row>
             </v-card-title>
           </v-img>
 
           <div v-if="author.about">
             <v-card-subtitle>About</v-card-subtitle>
-            <v-card-text v-if="!editMode">{{ author.about }}</v-card-text>
-            <v-textarea v-else v-model="author.about" rows="10"></v-textarea>
+            <v-card-text>{{ author.about }}</v-card-text>
           </div>
 
           <v-card-subtitle>
@@ -69,9 +53,7 @@
                   variant="plain"
                   @click.stop="deleteDialog = true"
                 ></v-btn>
-                <v-dialog
-                  v-model="deleteDialog"
-                >
+                <v-dialog v-model="deleteDialog">
                   <v-card
                     max-width="400"
                     :text='`Are you sure you want to delete song "${song.title}"?`'
@@ -83,28 +65,17 @@
                         @click="deleteSong(song)"
                         color="error"
                       ></v-btn>
-                      <v-btn
-                        text="No"
-                        @click="deleteDialog = false"
-                      ></v-btn>
+                      <v-btn text="No" @click="deleteDialog = false"></v-btn>
                     </template>
                   </v-card>
                 </v-dialog>
               </template>
             </v-list-item>
           </v-list>
-
         </v-card>
 
-        <v-alert v-else-if="error" type="error">
-          {{ error }}
-        </v-alert>
-
-        <v-progress-circular
-          v-else
-          indeterminate
-          color="primary"
-        ></v-progress-circular>
+        <v-alert v-else-if="error" type="error">{{ error }}</v-alert>
+        <v-progress-circular v-else indeterminate color="primary"></v-progress-circular>
       </v-col>
     </v-row>
     <v-fab
@@ -125,7 +96,7 @@
 </template>
 
 <script>
-import {mapGetters} from "vuex";
+import { mapGetters } from "vuex";
 import Header from "@/components/Header.vue";
 import AuthorButtons from "@/components/AuthorButtons.vue";
 import SongButtons from "@/components/SongButtons.vue";
@@ -133,100 +104,45 @@ import SongEditor from "@/components/SongEditor.vue";
 import MessageSnackbar from "@/components/MessageSnackbar.vue";
 
 export default {
-  name: "Author",
-  components: {MessageSnackbar, AuthorButtons},
+  name: "AuthorView",
+  components: { Header, AuthorButtons, SongButtons, SongEditor, MessageSnackbar },
+  props: {
+    author: Object,
+  },
+  emits: ['edit-mode', 'refresh-data'],
   data() {
     return {
-      author: {
-        id: null,
-        name: null,
-        about: null,
-        image: null,
-        numberOfSongs: null,
-        isFavorite: false,
-        songs: []
-      },
       editorDialog: false,
       deleteDialog: false,
-      editMode: false,
       showMessage: false,
-      message: null,
+      message: '',
       error: null,
-      loading: true
+      loading: false,
     };
   },
-  async created() {
-    await this.fetchAuthorData(this.$route.params.author_id);
-  },
-  beforeRouteUpdate(to, from, next) {
-    this.fetchAuthorData(to.params.author_id);
-    next();
-  },
   computed: {
-    ...mapGetters(['user'])
+    ...mapGetters(['user']),
   },
   methods: {
-    async fetchAuthorData(authorId) {
-      this.loading = true;
-      this.error = null;
-      try {
-        const response = await fetch(`/api/authors/${authorId}`);
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        this.author = await response.json();
-      } catch (error) {
-        this.error = error.message;
-      } finally {
-        this.loading = false;
-      }
-    },
     async deleteSong(song) {
       try {
         const response = await fetch(`/api/songs/${song.id}`, {
           method: 'DELETE',
           headers: {
-            'Content-Type': 'application/json'
-          }
+            'Content-Type': 'application/json',
+          },
         });
         if (!response.ok) {
           throw new Error('Failed to delete song');
         }
-        console.log('Deleted song:', song.id);
         this.deleteDialog = false;
-        await this.fetchAuthorData(this.author.id)
+        await this.$emit('refresh-data');
       } catch (error) {
         console.error('Error while deleting song:', error);
       }
     },
-    async updateAuthor() {
-      try {
-        const response = await fetch(`/api/authors/${this.author.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            name: this.author.name,
-            about: this.author.about
-          })
-        })
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        this.message = 'Author updated successfully';
-        console.log('Author updated successfully, author id:', this.author.id);
-      } catch (error) {
-        this.message = 'Error while editing author';
-        console.error('Error while updating author:', error);
-      } finally {
-        this.showMessage = true;
-        this.editMode = false;
-      }
-    }
-  }
+  },
 };
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>
