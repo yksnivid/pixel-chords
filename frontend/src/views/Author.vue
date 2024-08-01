@@ -67,29 +67,8 @@
                   icon="mdi-delete"
                   size="small"
                   variant="plain"
-                  @click.stop="deleteDialog = true"
+                  @click.stop="handleSongDelete(song)"
                 ></v-btn>
-                <v-dialog
-                  v-model="deleteDialog"
-                >
-                  <v-card
-                    max-width="400"
-                    :text='`Are you sure you want to delete song "${song.title}"?`'
-                    title="Delete song"
-                  >
-                    <template v-slot:actions>
-                      <v-btn
-                        text="Yes, delete"
-                        @click="deleteSong(song)"
-                        color="error"
-                      ></v-btn>
-                      <v-btn
-                        text="No"
-                        @click="deleteDialog = false"
-                      ></v-btn>
-                    </template>
-                  </v-card>
-                </v-dialog>
               </template>
             </v-list-item>
           </v-list>
@@ -107,8 +86,9 @@
         ></v-progress-circular>
       </v-col>
     </v-row>
+
     <v-fab
-      v-if="user.isAdmin"
+      v-if="user.isLoggedIn"
       icon="mdi-plus"
       class="mb-10"
       color="primary"
@@ -120,6 +100,7 @@
       @click.stop="editorDialog = true"
     ></v-fab>
   </v-container>
+  <DeleteSongDialog v-model="deleteDialog" :song="songToDelete" />
   <SongEditor v-model="editorDialog" :author="author" />
   <MessageSnackbar v-model="showMessage" :message="message" />
 </template>
@@ -131,10 +112,11 @@ import AuthorButtons from "@/components/AuthorButtons.vue";
 import SongButtons from "@/components/SongButtons.vue";
 import SongEditor from "@/components/SongEditor.vue";
 import MessageSnackbar from "@/components/MessageSnackbar.vue";
+import DeleteSongDialog from "@/components/songs/DeleteSongDialog.vue";
 
 export default {
   name: "Author",
-  components: {MessageSnackbar, AuthorButtons},
+  components: {DeleteSongDialog, MessageSnackbar, AuthorButtons},
   data() {
     return {
       author: {
@@ -147,12 +129,14 @@ export default {
         songs: []
       },
       editorDialog: false,
-      deleteDialog: false,
       editMode: false,
       showMessage: false,
-      message: null,
+      message: '',
       error: null,
-      loading: true
+      loading: true,
+
+      deleteDialog: false,
+      songToDelete: {type: Object, default: undefined}
     };
   },
   async created() {
@@ -181,24 +165,6 @@ export default {
         this.loading = false;
       }
     },
-    async deleteSong(song) {
-      try {
-        const response = await fetch(`/api/songs/${song.id}`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        if (!response.ok) {
-          throw new Error('Failed to delete song');
-        }
-        console.log('Deleted song:', song.id);
-        this.deleteDialog = false;
-        await this.fetchAuthorData(this.author.id)
-      } catch (error) {
-        console.error('Error while deleting song:', error);
-      }
-    },
     async updateAuthor() {
       try {
         const response = await fetch(`/api/authors/${this.author.id}`, {
@@ -223,6 +189,10 @@ export default {
         this.showMessage = true;
         this.editMode = false;
       }
+    },
+    handleSongDelete(song) {
+      this.songToDelete = song;
+      this.deleteDialog = true;
     }
   }
 };

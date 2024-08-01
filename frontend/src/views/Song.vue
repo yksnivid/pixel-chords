@@ -4,7 +4,7 @@
     <v-card v-if="!loading" :subtitle="song.author.name">
       <template v-slot:title>
         <div v-if="!editMode">{{ song.title }}</div>
-        <v-text-field v-else v-model="song.title" density="compact" hide-details />
+        <v-text-field v-else v-model="editor.title" density="compact" hide-details />
       </template>
       <template v-slot:prepend>
         <v-avatar
@@ -26,7 +26,7 @@
             :icon="editMode ? 'mdi-close' : 'mdi-pencil'"
             size="small"
             variant="plain"
-            @click.stop="editMode = !editMode"
+            @click.stop="handleEditMode"
           ></v-btn>
         </div>
       </template>
@@ -130,10 +130,16 @@ export default {
         transposeSemitones: 0,
         isFavorite: false
       },
+
+      editor: {
+        title: '',
+        lyrics: ''
+      },
+      editMode: false,
+
       fontSize: 16,
       loading: true,
       error: undefined,
-      editMode: false,
       showMessage: false,
       message: null
     };
@@ -189,8 +195,8 @@ export default {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            title: this.song.title,
-            lyrics: this.song.lyrics
+            title: this.editor.title,
+            lyrics: this.editor.lyrics
           })
         });
         if (!response.ok) {
@@ -198,6 +204,7 @@ export default {
         }
         this.message = 'Song updated successfully';
         console.log('Song updated successfully, song id:', this.song.id);
+        await this.loadSong(this.song.id);
       } catch (error) {
         this.message = 'Error while editing song';
         console.error('Error while updating song:', error);
@@ -234,6 +241,13 @@ export default {
     changeCapoPosition(amount) {
       this.song.capoPosition += amount;
       this.debouncedSaveSongSettings();
+    },
+    handleEditMode() {
+      this.editMode = !this.editMode;
+      if (this.editMode === true) {
+        this.editor.title = this.song.title;
+        this.editor.lyrics = this.song.lyrics;
+      }
     }
   }
 };

@@ -25,9 +25,13 @@ class Song(db.Model):
     __tablename__ = 'songs'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String, nullable=False)
-    lyrics = db.Column(db.Text, nullable=True)
+    lyrics = db.Column(db.Text, nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('authors.id'), nullable=False)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    status = db.Column(db.String(50), nullable=False, default='draft')
+
     user_settings = db.relationship('UserSongSettings', back_populates='song', lazy=True, cascade='all, delete-orphan')
+    created_by = db.relationship('User', back_populates='created_songs')
 
 
 class User(db.Model, UserMixin):
@@ -42,6 +46,7 @@ class User(db.Model, UserMixin):
     favorite_songs = db.relationship('Song', secondary=favorites_songs, lazy='subquery',
                                      backref=db.backref('favorited_by', lazy=True))
     song_settings = db.relationship('UserSongSettings', back_populates='user', lazy=True, cascade='all, delete-orphan')
+    created_songs = db.relationship('Song', back_populates='created_by', lazy=True)
 
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
