@@ -14,7 +14,7 @@
             v-model="registerData.email"
             label="Email"
             required
-            :rules="[v => /^[a-z.-]+@[a-z.-]+\.[a-z]+$/i.test(value) || 'Invalid Email address']"
+            :rules="[v => /^[a-z.-]+@[a-z.-]+\.[a-z]+$/i.test(v) || 'Invalid Email address']"
           ></v-text-field>
           <v-text-field
             v-model="registerData.password"

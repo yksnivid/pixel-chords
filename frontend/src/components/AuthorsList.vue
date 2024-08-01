@@ -15,8 +15,8 @@
           height="200px"
           cover
         >
-          <v-card-title class="text-white py-0" v-text="author.name"></v-card-title>
-          <v-card-subtitle class="text-white my-2" v-text="'Songs: ' + author.numberOfSongs"></v-card-subtitle>
+          <v-card-title class="text-white pb-0" v-text="author.name"></v-card-title>
+          <v-card-subtitle class="text-white mb-2" v-text="`Songs: ${author.numberOfSongs}`"></v-card-subtitle>
         </v-img>
         <v-card-actions >
           <v-btn
@@ -27,33 +27,6 @@
           ></v-btn>
           <v-spacer></v-spacer>
           <AuthorButtons :author="author" />
-          <v-btn
-            v-if="user.isAdmin"
-            icon="mdi-delete"
-            size="small"
-            variant="plain"
-            @click.stop="deleteDialog = true"
-          ></v-btn>
-          <v-dialog
-            v-model="deleteDialog"
-          >
-            <v-card
-              :text='`Are you sure you want to delete author "${author.name}"?`'
-              title="Delete song"
-            >
-              <template v-slot:actions>
-                <v-btn
-                  text="Yes, delete"
-                  @click="deleteAuthor(author)"
-                  color="error"
-                ></v-btn>
-                <v-btn
-                  text="No"
-                  @click="deleteDialog = false"
-                ></v-btn>
-              </template>
-            </v-card>
-          </v-dialog>
         </v-card-actions>
       </v-card>
     </v-col>
@@ -62,9 +35,11 @@
 
 <script>
 import {mapGetters} from "vuex";
+import DeleteAuthorDialog from "@/components/authors/DeleteAuthorDialog.vue";
 
 export default {
   name: "AuthorsList",
+  components: {DeleteAuthorDialog},
   props: {
     authors: {
       type: Array,
@@ -74,29 +49,14 @@ export default {
   data() {
     return {
       deleteDialog: false,
+      authorToDelete: {
+        type: Object,
+        default: undefined
+      }
     };
   },
   computed: {
     ...mapGetters(['user'])
-  },
-  methods: {
-    async deleteAuthor(author) {
-      try {
-        const response = await fetch(`/api/authors/${author.id}`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        if (!response.ok) {
-          throw new Error('Failed to delete author');
-        }
-        console.log('Deleted author:', author.id);
-        this.deleteDialog = false;
-      } catch (error) {
-        console.error('Error while deleting song:', error);
-      }
-    }
   }
 }
 </script>

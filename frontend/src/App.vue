@@ -20,8 +20,8 @@ export default {
     ...mapGetters(['user'])
   },
   watch: {
-    'user.id'() {
-      console.log('RUNNING')
+    'user.id'(id) {
+      console.log('Current user:', id)
       this.$router.go()
     }
   }

@@ -12,10 +12,19 @@
     variant="plain"
     @click.stop="share"
   ></v-btn>
+  <v-btn
+    v-if="user.isAdmin"
+    icon="mdi-delete"
+    size="small"
+    variant="plain"
+    @click.stop="deleteDialog = true"
+  ></v-btn>
+  <DeleteAuthorDialog v-model="deleteDialog" :author="author" />
   <LoginDialog v-model="loginDialog" />
 </template>
 
 <script>
+import DeleteAuthorDialog from "@/components/authors/DeleteAuthorDialog.vue";
 import LoginDialog from "@/components/LoginDialog.vue";
 import {mapGetters} from "vuex";
 
@@ -30,7 +39,8 @@ export default {
   },
   data() {
     return {
-      loginDialog: false
+      loginDialog: false,
+      deleteDialog: false
     };
   },
   computed: {

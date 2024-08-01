@@ -4,6 +4,7 @@ from .models import Author, Song, UserSongSettings
 from .extensions import db
 import random
 from fuzzywuzzy import process
+from sqlalchemy import or_
 
 
 def register_routes(app: Flask):
@@ -63,9 +64,22 @@ def register_routes(app: Flask):
 
     @app.route('/api/songs/recent', methods=['GET'])
     def get_recent_songs():
-        all_songs = Song.query.all()
 
-        if all_songs:
+        if not current_user.is_authenticated:
+            songs = Song.query.filter_by(status='published')
+        elif current_user.role == 'admin':
+            songs = Song.query
+        else:
+            songs = Song.query.filter(
+                or_(
+                    Song.status == 'published',
+                    Song.created_by_id == current_user.id
+                )
+            )
+
+        songs = songs.order_by(Song.id.desc()).limit(10).all()
+
+        if songs:
 
             if current_user.is_authenticated:
                 favorite_songs_ids = {song.id for song in current_user.favorite_songs}
@@ -84,7 +98,7 @@ def register_routes(app: Flask):
                 # user specified settings
                 'isFavorite': song.id in favorite_songs_ids
 
-            } for song in all_songs])
+            } for song in songs])
 
         return jsonify({'error': 'Song not found'}), 404
 
@@ -156,6 +170,13 @@ def register_routes(app: Flask):
                 favorite_authors_ids = set()
                 favorite_songs_ids = set()
 
+            if not current_user.is_authenticated:
+                songs = [song for song in author.songs if song.status == 'published']
+            elif current_user.role != 'admin':
+                songs = [song for song in author.songs if song.status == 'published' or song.created_by_id == current_user.id]
+            elif current_user.role == 'admin':
+                songs = author.songs
+
             return jsonify({
                 # common fields
                 'id': author.id,
@@ -169,18 +190,17 @@ def register_routes(app: Flask):
                 'songs': [{
                     'id': song.id,
                     'title': song.title,
+                    'status': song.status,
+                    'created_by_id': song.created_by_id,
                     # user specific field
                     'isFavorite': song.id in favorite_songs_ids
-                } for song in author.songs]
+                } for song in songs]
             })
         return jsonify({'error': 'Author not found'}), 404
 
     @app.route('/api/songs', methods=['POST'])
     @login_required
     def create_song():
-
-        if current_user.role!= 'admin':
-            return jsonify({'error': 'Unauthorized to create song'}), 401
 
         data = request.get_json()
 
@@ -195,7 +215,13 @@ def register_routes(app: Flask):
         if not author:
             return jsonify({'error': f'Author with id={author_id} not found'}), 404
 
-        new_song = Song(title=title, lyrics=lyrics, author_id=author.id)
+        new_song = Song(
+            title=title,
+            lyrics=lyrics,
+            author_id=author.id,
+            created_by_id=current_user.id,
+            status='published' if current_user.role == 'admin' else 'draft'
+        )
         db.session.add(new_song)
         db.session.commit()
 

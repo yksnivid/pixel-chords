@@ -75,11 +75,14 @@ def login():
 
     if user and user.check_password(password):
         login_user(user)
-        return jsonify(
-            {'message': 'Logged in successfully',
-             'user': current_user.username,
-             'role': current_user.role}
-        ), 200
+        return jsonify({
+            'id': current_user.id,
+            'username': current_user.username,
+            'email': current_user.email,
+            'role': current_user.role,
+
+            'message': 'Logged in successfully'
+        }), 200
 
     return jsonify({'error': 'Invalid credentials'}), 401
 

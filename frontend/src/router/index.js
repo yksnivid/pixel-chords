@@ -52,11 +52,12 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
+
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
 
   if (requiresAuth) {
-    await store.dispatch('checkAuthStatus')
-    !store.state.isLoggedIn ? next({ path: '/' }) : next();
+    await store.dispatch('checkAuthStatus');
+    store.state.isLoggedIn ? next() : next('/');
   } else {
     next();
   }
