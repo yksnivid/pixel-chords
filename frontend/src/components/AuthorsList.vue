@@ -15,8 +15,7 @@
           height="200px"
           cover
         >
-          <v-card-title class="text-white pb-0" v-text="author.name"></v-card-title>
-          <v-card-subtitle class="text-white mb-2" v-text="`Songs: ${author.numberOfSongs}`"></v-card-subtitle>
+          <v-card-title class="text-white" v-text="author.name"></v-card-title>
         </v-img>
         <v-card-actions >
           <v-btn

@@ -13,39 +13,45 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'home',
+      name: 'Home',
       component: Home
     },
     {
       path: '/account',
-      name: 'account',
+      name: 'Account',
       component: Account,
       meta: { requiresAuth: true }
     },
     {
       path: '/account/favorites',
-      name: 'favorites',
+      name: 'Favorites',
       component: Favorites,
       meta: { requiresAuth: true }
     },
     {
+      path: '/users/:userId',
+      name: 'UserProfile',
+      component: Account,
+      props: true
+    },
+    {
       path: '/authors',
-      name:'authors',
+      name:'Authors',
       component: Authors
     },
     {
       path: '/authors/:author_id',
-      name:'author',
+      name:'Author',
       component: Author
     },
     {
       path: '/authors/:author_id/songs/:song_id',
-      name: 'song',
+      name: 'Song',
       component: Song
     },
     {
       path: '/:catchAll(.*)',
-      name: 'notFound',
+      name: 'NotFound',
       component: NotFound
     }
   ]

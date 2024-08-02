@@ -20,5 +20,5 @@ registerPlugins(app)
 import store from '@/store'
 
 store.dispatch('checkAuthStatus').then(() => {
-  app.use(store).mount('#app');
+  app.mount('#app');
 });

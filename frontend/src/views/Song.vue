@@ -1,7 +1,7 @@
 <template>
   <Header />
   <v-container>
-    <v-card v-if="!loading" :subtitle="song.author.name">
+    <v-card v-if="!loading && !error" :subtitle="song.author.name">
       <template v-slot:title>
         <div v-if="!editMode">{{ song.title }}</div>
         <v-text-field v-else v-model="editor.title" density="compact" hide-details />
@@ -81,7 +81,27 @@
       <v-card-text :style="{ fontSize: fontSize + 'px' }" v-if="!editMode">
         <div v-html="formattedSong"></div>
       </v-card-text>
-      <v-textarea v-else v-model="song.lyrics" rows="15" :style="{'font-family': 'monospace'}"></v-textarea>
+      <v-textarea
+        v-else
+        v-model="editor.lyrics"
+        rows="15"
+        :style="{'font-family': 'monospace'}"
+      ></v-textarea>
+      <v-card-text v-if="!editMode">
+        <v-row no-gutters justify="end">
+          <v-col cols="auto" :style="{'font-family': 'monospace'}">
+            Song created by
+            <v-btn flat text :to="userProfileRoute">
+              @{{ song.created_by.username }}
+            </v-btn>
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
+    <v-card v-else-if="error">
+      <v-alert type="error">
+        An error occurred while fetching the song data. Please try again later.
+      </v-alert>
     </v-card>
     <v-progress-circular
       v-else
@@ -89,14 +109,7 @@
       color="primary"
     ></v-progress-circular>
   </v-container>
-  <v-snackbar v-model="showMessage" timeout="3000">
-    {{ message }}
-    <template v-slot:actions>
-      <v-btn variant="text" @click="showMessage = false">
-        Close
-      </v-btn>
-    </template>
-  </v-snackbar>
+  <MessageSnackbar v-model="showMessage" :message="message" />
 </template>
 
 <script>
@@ -105,6 +118,7 @@ import Header from "@/components/Header.vue";
 import SongButtons from "@/components/SongButtons.vue";
 import ChordSheetJS from 'chordsheetjs';
 import { debounce } from '@/utils/debounce.js';
+import MessageSnackbar from "@/components/MessageSnackbar.vue";
 
 const formatter = new ChordSheetJS.HtmlDivFormatter();
 const parser = new ChordSheetJS.ChordsOverWordsParser();
@@ -112,6 +126,7 @@ const parser = new ChordSheetJS.ChordsOverWordsParser();
 export default {
   name: 'Song',
   components: {
+    MessageSnackbar,
     Header,
     SongButtons
   },
@@ -121,6 +136,11 @@ export default {
         id: null,
         title: null,
         lyrics: '',
+        created_by: {
+          id: null,
+          username: null,
+          image: null
+        },
         author: {
           id: null,
           name: null,
@@ -139,9 +159,9 @@ export default {
 
       fontSize: 16,
       loading: true,
-      error: undefined,
+      error: false,
       showMessage: false,
-      message: null
+      message: ''
     };
   },
   async created() {
@@ -158,6 +178,13 @@ export default {
       const song = parser.parse(this.song.lyrics);
       const songTransposed = song.transpose(this.song.transposeSemitones);
       return formatter.format(songTransposed);
+    },
+    userProfileRoute() {
+      if (this.user.id === this.song.created_by.id) {
+        return { name: 'Account' };
+      } else {
+        return { name: 'UserProfile', params: { userId: this.song.created_by.id } };
+      }
     }
   },
   methods: {
@@ -165,9 +192,17 @@ export default {
       this.loading = true;
       try {
         const response = await fetch(`/api/songs/${songId}`);
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
+
+        if (response.status === 401) {
+          this.error = true;
+          this.message = 'You are not authorized to view this song';
+          return
+        } else if (response.status === 404) {
+          this.error = true;
+          this.message = 'Song not found';
+          return
         }
+
         this.song = await response.json();
 
         if (!this.user.isLoggedIn) {
