@@ -1,66 +1,99 @@
 from flask import Flask, jsonify, request
 from flask_login import login_required, current_user
-from .models import Author, Song, UserSongSettings
+from .models import Author, Song, UserSongSettings, User
 from .extensions import db
 import random
 from fuzzywuzzy import process
 from sqlalchemy import or_
 
 
+def user_has_access_to_song(song):
+    """Проверяет, имеет ли текущий пользователь доступ к песне."""
+    if song.status == 'published':
+        return True
+    if not current_user.is_authenticated:
+        return False
+    if current_user.id == song.created_by_id or current_user.role == 'admin':
+        return True
+    return False
+
+
 def register_routes(app: Flask):
+    @app.route('/api/users/<int:user_id>', methods=['GET'])
+    def get_user(user_id):
+        user = User.query.get(user_id)
+
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        return jsonify({
+            'id': user.id,
+            'username': user.username
+        })
+
     @app.route('/api/songs/random', methods=['GET'])
     def get_random_song():
         total_count = Song.query.count()
         random_index = random.randint(1, total_count)
         song = Song.query.offset(random_index - 1).limit(1).first()
 
-        if song:
+        if not song:
+            return jsonify({'error': 'No songs found'}), 404
 
-            return jsonify({
-                'id': song.id,
-                'author': {
-                    'id': song.author.id
-                }
-            })
+        if not user_has_access_to_song(song):
+            return jsonify({'error': 'Unauthorized to view song'}), 401
 
-        return jsonify({'error': 'No songs found'}), 404
+        return jsonify({
+            'id': song.id,
+            'author': {
+                'id': song.author.id
+            }
+        })
 
-    @app.route('/api/songs/<song_id>', methods=['GET'])
+    @app.route('/api/songs/<int:song_id>', methods=['GET'])
     def get_song(song_id):
+
         song = Song.query.get(song_id)
 
-        if song:
+        if not song:
+            return jsonify({'error': 'Song not found'}), 404
 
-            is_favorite = False
-            transpose_semitones = 0
-            capo_position = 0
+        if not user_has_access_to_song(song):
+            return jsonify({'error': 'Unauthorized to view song'}), 401
 
-            if current_user.is_authenticated:
+        is_favorite = False
+        transpose_semitones = 0
+        capo_position = 0
 
-                user_song_settings = UserSongSettings.query.filter_by(user_id=current_user.id, song_id=song_id).first()
-                if user_song_settings:
-                    transpose_semitones = user_song_settings.transposition
-                    capo_position = user_song_settings.capo_position
+        if current_user.is_authenticated:
 
-                is_favorite = song.id in {song.id for song in current_user.favorite_songs}
+            user_song_settings = UserSongSettings.query.filter_by(user_id=current_user.id, song_id=song_id).first()
+            if user_song_settings:
+                transpose_semitones = user_song_settings.transposition
+                capo_position = user_song_settings.capo_position
 
-            return jsonify({
-                # common fields
-                'id': song.id,
-                'title': song.title,
-                'lyrics': song.lyrics,
-                'author': {
-                    'id': song.author.id,
-                    'name': song.author.name,
-                    'image': song.author.image
-                },
-                # user specified settings
-                'isFavorite': is_favorite,
-                'transposeSemitones': transpose_semitones,
-                'capoPosition': capo_position
-            })
+            is_favorite = song.id in {song.id for song in current_user.favorite_songs}
 
-        return jsonify({'error': 'Song not found'}), 404
+        return jsonify({
+            # common fields
+            'id': song.id,
+            'title': song.title,
+            'lyrics': song.lyrics,
+            'status': song.status,
+            'created_by': {
+                'id': song.created_by_id,
+                'username': User.query.get(song.created_by_id).username
+            },
+            'author': {
+                'id': song.author.id,
+                'name': song.author.name,
+                'image': song.author.image
+            },
+            # user specified settings
+            'isFavorite': is_favorite,
+            'transposeSemitones': transpose_semitones,
+            'capoPosition': capo_position
+        })
 
     @app.route('/api/songs/recent', methods=['GET'])
     def get_recent_songs():
@@ -137,66 +170,62 @@ def register_routes(app: Flask):
     def get_authors():
         authors = Author.query.order_by(Author.name).all()
 
-        if authors:
+        if not authors:
+            return jsonify({'error': 'Authors not found'}), 404
 
-            if current_user.is_authenticated:
-                favorite_authors_ids = {author.id for author in current_user.favorite_authors}
-            else:
-                favorite_authors_ids = set()
+        if current_user.is_authenticated:
+            favorite_authors_ids = {author.id for author in current_user.favorite_authors}
+        else:
+            favorite_authors_ids = set()
 
-            return jsonify([{
-                # common fields
-                'id': author.id,
-                'name': author.name,
-                'numberOfSongs': len(author.songs),
-                'image': author.image,
-                # user specific fields
-                'isFavorite': author.id in favorite_authors_ids
-            } for author in authors])
-
-        return jsonify({'error': 'Authors not found'}), 404
+        return jsonify([{
+            # common fields
+            'id': author.id,
+            'name': author.name,
+            'image': author.image,
+            # user specific fields
+            'isFavorite': author.id in favorite_authors_ids
+        } for author in authors])
 
     @app.route('/api/authors/<int:author_id>', methods=['GET'])
     def get_author(author_id):
-
         author = Author.query.get(author_id)
 
-        if author:
+        if not author:
+            return jsonify({'error': 'Author not found'}), 404
 
-            if current_user.is_authenticated:
-                favorite_authors_ids = {author.id for author in current_user.favorite_authors}
-                favorite_songs_ids = {song.id for song in current_user.favorite_songs}
-            else:
-                favorite_authors_ids = set()
-                favorite_songs_ids = set()
+        if current_user.is_authenticated:
+            favorite_authors_ids = {fav_author.id for fav_author in current_user.favorite_authors}
+            favorite_songs_ids = {fav_song.id for fav_song in current_user.favorite_songs}
+        else:
+            favorite_authors_ids = set()
+            favorite_songs_ids = set()
 
-            if not current_user.is_authenticated:
-                songs = [song for song in author.songs if song.status == 'published']
-            elif current_user.role != 'admin':
-                songs = [song for song in author.songs if song.status == 'published' or song.created_by_id == current_user.id]
-            elif current_user.role == 'admin':
-                songs = author.songs
+        # Use the query interface to order the songs
+        songs_query = Song.query.filter_by(author_id=author_id).order_by(Song.title.asc())
 
-            return jsonify({
-                # common fields
-                'id': author.id,
-                'name': author.name,
-                'numberOfSongs': len(author.songs),
-                'image': author.image,
-                'about': author.about,
-                # user specific field
-                'isFavorite': author.id in favorite_authors_ids,
-                # common fields
-                'songs': [{
-                    'id': song.id,
-                    'title': song.title,
-                    'status': song.status,
-                    'created_by_id': song.created_by_id,
-                    # user specific field
-                    'isFavorite': song.id in favorite_songs_ids
-                } for song in songs]
-            })
-        return jsonify({'error': 'Author not found'}), 404
+        if not current_user.is_authenticated:
+            songs_query = songs_query.filter_by(status='published')
+        elif current_user.role != 'admin':
+            songs_query = songs_query.filter((Song.status == 'published') | (Song.created_by_id == current_user.id))
+
+        songs = songs_query.all()
+
+        return jsonify({
+            'id': author.id,
+            'name': author.name,
+            'numberOfSongs': songs_query.count(),  # This ensures you get the correct count of songs after filtering
+            'image': author.image,
+            'about': author.about,
+            'isFavorite': author.id in favorite_authors_ids,
+            'songs': [{
+                'id': song.id,
+                'title': song.title,
+                'status': song.status,
+                'created_by_id': song.created_by_id,
+                'isFavorite': song.id in favorite_songs_ids
+            } for song in songs]
+        })
 
     @app.route('/api/songs', methods=['POST'])
     @login_required

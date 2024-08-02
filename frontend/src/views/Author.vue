@@ -43,17 +43,17 @@
             </v-card-title>
           </v-img>
 
-          <div v-if="author.about">
+          <div v-if="author.about || editMode">
             <v-card-subtitle>About</v-card-subtitle>
             <v-card-text v-if="!editMode">{{ author.about }}</v-card-text>
             <v-textarea v-else v-model="author.about" rows="10"></v-textarea>
           </div>
 
-          <v-card-subtitle>
+          <v-card-subtitle v-if="!editMode">
             Number of songs: {{ author.numberOfSongs }}
           </v-card-subtitle>
 
-          <v-list>
+          <v-list v-if="!editMode">
             <v-list-item
               v-for="song in author.songs"
               :key="song.id"
